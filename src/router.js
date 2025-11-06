@@ -6,6 +6,6 @@ const router = Router();
 
 router.use("/", books);
 
-router.post("/orders", mail);
+router.use("/orders", mail);
 
 export default router;
