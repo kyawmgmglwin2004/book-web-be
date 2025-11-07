@@ -5,8 +5,7 @@ import router from "./router.js";
 import cors from "cors"
 
 const app = express();
-const con = await Mysql.getConnection();
-// console.log("con ", con)
+app.use("/uploads", express.static("uploads"));
 
 
 const allowedOrigins = ["http://localhost:5173"];
