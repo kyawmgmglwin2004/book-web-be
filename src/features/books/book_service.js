@@ -121,24 +121,35 @@ async function deleteBook(id) {
   }
 }
 
-async function updateBook(id, title, imagePath, price, stock, remark ) {
-    let connection;
-    try {
-         connection = await Mysql.getConnection();
-    const [book] = await connection.query(
+
+import fs from "fs";
+import path from "path";
+import Mysql from "./Mysql.js"; // adjust import as needed
+import StatusCode from "./StatusCode.js"; // adjust import as needed
+
+async function updateBook(id, title, imagePath, price, stock, remark) {
+  let connection;
+  try {
+    connection = await Mysql.getConnection();
+
+    // 1️⃣ Get existing book record
+    const [bookRows] = await connection.query(
       "SELECT image FROM books WHERE id = ?",
       [id]
     );
-    if (book.length === 0) return StatusCode.NOT_FOUND("Book not found!");
+    if (bookRows.length === 0) {
+      return StatusCode.NOT_FOUND("Book not found!");
+    }
 
-    const imagePath = book[0].image;
-    if (imagePath) {
-      // extract the file path part after /uploads/
-      const uploadIndex = imagePath.indexOf("/uploads/");
+    const oldImagePath = bookRows[0].image;
+
+    // 2️⃣ If a new image path is provided, delete the old image file
+    if (imagePath && oldImagePath) {
+      const uploadIndex = oldImagePath.indexOf("/uploads/");
       let relativePath = "";
 
       if (uploadIndex !== -1) {
-        relativePath = imagePath.substring(uploadIndex + 1); // remove leading '/'
+        relativePath = oldImagePath.substring(uploadIndex + 1); // remove leading '/'
       }
 
       const fullPath = path.join(process.cwd(), relativePath);
@@ -146,32 +157,58 @@ async function updateBook(id, title, imagePath, price, stock, remark ) {
 
       if (fs.existsSync(fullPath)) {
         fs.unlinkSync(fullPath);
-        console.log("File deleted successfully!");
+        console.log("Old file deleted successfully!");
       } else {
-        console.log("File not found:", fullPath);
+        console.log("Old file not found:", fullPath);
       }
     }
 
+    // 3️⃣ Build dynamic SQL for only provided fields
     const fields = [];
     const values = [];
 
-    if(title !== undefined) {
-        fields.push("title = ?");
-        values.push(userId);
+    if (title !== undefined) {
+      fields.push("title = ?");
+      values.push(title);
     }
 
-    if(imagePath !== undefined) {
-        fields.push("imagePath = ?");
-        values.push(imagePath);
+    if (imagePath !== undefined) {
+      fields.push("image = ?");
+      values.push(imagePath);
     }
 
-    if(price !== undefined) {
-        
+    if (price !== undefined) {
+      fields.push("price = ?");
+      values.push(price);
     }
-    } catch (error) {
-        
+
+    if (stock !== undefined) {
+      fields.push("stock = ?");
+      values.push(stock);
     }
+
+    if (remark !== undefined) {
+      fields.push("remark = ?");
+      values.push(remark);
+    }
+
+    // 4️⃣ Update only if there are fields to update
+    if (fields.length > 0) {
+      const sql = `UPDATE books SET ${fields.join(", ")} WHERE id = ?`;
+      values.push(id);
+
+      await connection.query(sql, values);
+    }
+
+    return StatusCode.SUCCESS("Book updated successfully!");
+  } catch (error) {
+    console.error("Error updating book:", error);
+    return StatusCode.SERVER_ERROR("Internal server error");
+  } finally {
+    if (connection) connection.release();
+  }
 }
+
 
 export default {
   bookList,
