@@ -121,12 +121,6 @@ async function deleteBook(id) {
   }
 }
 
-
-import fs from "fs";
-import path from "path";
-import Mysql from "./Mysql.js"; // adjust import as needed
-import StatusCode from "./StatusCode.js"; // adjust import as needed
-
 async function updateBook(id, title, imagePath, price, stock, remark) {
   let connection;
   try {
@@ -142,11 +136,17 @@ async function updateBook(id, title, imagePath, price, stock, remark) {
     }
 
     const oldImagePath = bookRows[0].image;
+    const fields = [];
+    const values = [];
 
-    // 2️⃣ If a new image path is provided, delete the old image file
-    if (imagePath && oldImagePath) {
-      const uploadIndex = oldImagePath.indexOf("/uploads/");
-      let relativePath = "";
+    if (title !== undefined) {
+      fields.push("title = ?");
+      values.push(title);
+    }
+
+    if (imagePath !== undefined) {
+       const uploadIndex = oldImagePath.indexOf("/uploads/");
+        let relativePath = "";
 
       if (uploadIndex !== -1) {
         relativePath = oldImagePath.substring(uploadIndex + 1); // remove leading '/'
@@ -161,18 +161,6 @@ async function updateBook(id, title, imagePath, price, stock, remark) {
       } else {
         console.log("Old file not found:", fullPath);
       }
-    }
-
-    // 3️⃣ Build dynamic SQL for only provided fields
-    const fields = [];
-    const values = [];
-
-    if (title !== undefined) {
-      fields.push("title = ?");
-      values.push(title);
-    }
-
-    if (imagePath !== undefined) {
       fields.push("image = ?");
       values.push(imagePath);
     }
@@ -200,7 +188,7 @@ async function updateBook(id, title, imagePath, price, stock, remark) {
       await connection.query(sql, values);
     }
 
-    return StatusCode.SUCCESS("Book updated successfully!");
+    return StatusCode.OK("Book updated successfully!");
   } catch (error) {
     console.error("Error updating book:", error);
     return StatusCode.SERVER_ERROR("Internal server error");
@@ -215,4 +203,5 @@ export default {
   bookDetail,
   addBooks,
   deleteBook,
+  updateBook
 };

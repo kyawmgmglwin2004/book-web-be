@@ -62,9 +62,26 @@ async function deleteBook(req, res) {
             .json("SERVER ERROR");
     }
 }
+
+async function updateBook(req , res) {
+    try {
+        const {id} = req.params;
+        const { title , price , stock , remark } = req.body;
+        const imagePath = req.file ? `${domain}/uploads/${req.file.filename}` : null;
+        const result = await bookService.updateBook(id, title, imagePath, price, stock, remark);
+        return res.json(result);
+    } catch (error) {
+         console.error("Error update book action:", error);
+
+        return res
+            .status(500)
+            .json("SERVER ERROR");
+    }
+}
  export default {
     bookList,
     bookDetail,
     addBooks,
-    deleteBook
+    deleteBook,
+    updateBook
  }

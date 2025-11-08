@@ -14,5 +14,6 @@ bookRouter.get("/books", bookController.bookList);
 bookRouter.get("/books/:id", bookController.bookDetail);
 bookRouter.post("/books", upload.single("image"), bookController.addBooks);
 bookRouter.delete("/books/:id", bookController.deleteBook);
+bookRouter.post("/books/:id", upload.single("image"), bookController.updateBook);
 
 export default bookRouter;
