@@ -63,21 +63,33 @@ async function deleteBook(req, res) {
     }
 }
 
-async function updateBook(req , res) {
-    try {
-        const {id} = req.params;
-        const { title , price , stock , remark } = req.body;
-        const imagePath = req.file ? `${domain}/uploads/${req.file.filename}` : null;
-        const result = await bookService.updateBook(id, title, imagePath, price, stock, remark);
-        return res.json(result);
-    } catch (error) {
-         console.error("Error update book action:", error);
+async function updateBook(req, res) {
+  try {
+    const { id } = req.params;
+    const { title, price, stock, remark } = req.body;
 
-        return res
-            .status(500)
-            .json("SERVER ERROR");
+    // ✅ imagePath ကို undefined ထားမယ် (အသစ်တင်မှသာ assign)
+    let imagePath;
+    if (req.file) {
+      imagePath = `${domain}/uploads/${req.file.filename}`;
     }
+
+    const result = await bookService.updateBook(
+      id,
+      title,
+      imagePath,
+      price,
+      stock,
+      remark
+    );
+
+    return res.json(result);
+  } catch (error) {
+    console.error("Error update book action:", error);
+    return res.status(500).json("SERVER ERROR");
+  }
 }
+
  export default {
     bookList,
     bookDetail,

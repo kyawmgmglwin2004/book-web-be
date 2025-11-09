@@ -144,9 +144,11 @@ async function updateBook(id, title, imagePath, price, stock, remark) {
       values.push(title);
     }
 
+    // ✅ အသစ် image တင်ထားမှသာ update
     if (imagePath !== undefined) {
-       const uploadIndex = oldImagePath.indexOf("/uploads/");
-        let relativePath = "";
+      // ဖျက်ဖို့ old image path သုံး
+      const uploadIndex = oldImagePath.indexOf("/uploads/");
+      let relativePath = "";
 
       if (uploadIndex !== -1) {
         relativePath = oldImagePath.substring(uploadIndex + 1); // remove leading '/'
@@ -161,6 +163,7 @@ async function updateBook(id, title, imagePath, price, stock, remark) {
       } else {
         console.log("Old file not found:", fullPath);
       }
+
       fields.push("image = ?");
       values.push(imagePath);
     }
@@ -191,11 +194,12 @@ async function updateBook(id, title, imagePath, price, stock, remark) {
     return StatusCode.OK("Book updated successfully!");
   } catch (error) {
     console.error("Error updating book:", error);
-    return StatusCode.SERVER_ERROR("Internal server error");
+    return StatusCode.UNKNOWN("Internal server error");
   } finally {
     if (connection) connection.release();
   }
 }
+
 
 
 export default {
