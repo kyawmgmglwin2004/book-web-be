@@ -41,7 +41,7 @@ async function addBooks(req, res) {
         const result = await bookService.addBooks(title, imagePath, price, stock, remark);
         return res.json(result);
     } catch (error) {
-        console.error("Error get book list action:", error);
+        console.error("Error add new book action:", error);
 
         return res
             .status(500)

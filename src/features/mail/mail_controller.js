@@ -1,9 +1,9 @@
-import { sendOrderMail } from "./mail_service.js";
+import mailSevice  from "./mail_service.js";
 
 async function sendOrder(req, res) {
     try {
         const orderData = req.body;
-        const mailResult = await sendOrderMail(orderData);
+        const mailResult = await mailSevice.processOrder(orderData);
 
         if (mailResult) {
             return res.status(200).json({
