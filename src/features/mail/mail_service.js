@@ -6,6 +6,9 @@ async function sendOrderMail(orderData) {
   try {
     const transporter = nodemailer.createTransport({
       service: "gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
       auth: {
         user: config.GMAIL_USER,
         pass: config.GMAIL_PASS,

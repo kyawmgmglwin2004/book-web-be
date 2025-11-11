@@ -20,5 +20,6 @@ export const config = {
   DB_NAME: process.env.DB_NAME,
   DOMAIN: process.env.DOMAIN,
   GMAIL_USER: process.env.GMAIL_USER,
-  GMAIL_PASS: process.env.GMAIL_PASS
+  GMAIL_PASS: process.env.GMAIL_PASS,
+  ADMIN_JWT_SECRET: process.env.ADMIN_JWT_SECRET,
 };

@@ -13,7 +13,7 @@ async function sendOrder(req, res) {
         } else {
             return res.status(500).json({
                 code: 500,
-                message: "Order saved but email failed."
+                message: "Order  failed."
             });
         }
     } catch (error) {
