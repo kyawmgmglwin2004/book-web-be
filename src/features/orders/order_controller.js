@@ -26,8 +26,23 @@ async function orderDetail(req, res) {
             .json("SERVER ERROR");
     }
 }
+
+async function deleteOrder(req, res) {
+    try {
+        const {id} = req.params;
+        const result = await orderService.deleteOrder(id);
+        return res.json(result);
+    } catch (error) {
+        console.error("Error delete book  action:", error);
+
+        return res
+            .status(500)
+            .json("SERVER ERROR");
+    }
+}
 export default {
     orderList,
-    orderDetail
+    orderDetail,
+    deleteOrder
 }
 

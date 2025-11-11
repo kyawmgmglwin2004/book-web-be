@@ -24,20 +24,45 @@ async function orderDetail(id) {
         if(!id){
             return StatusCode.INVALID_ARGUMENT("need id for order detail");
         }
-        let sql = `SELECT * FORM orders WHERE id = ? `;
+        let sql = `SELECT * FROM orders WHERE id = ? `;
         connection = await Mysql.getConnection();
-        const [order] = await connection.query(sql, [id]);
-        if(order.length === 0){
+        const [orders] = await connection.query(sql, [id]);
+            for(const order of orders) {
+                const [items] = await connection.query( `SELECT * FROM order_items WHERE order_id = ?`, [order.id]);
+                order.items = items
+            }
+        if(orders.length === 0){
             return StatusCode.NOT_FOUND("order not found")
         }
-            return StatusCode.OK(order[0]);
+            return StatusCode.OK(orders[0]);
     } catch (error) {
-        console.log("Error get order list");
+        console.log("Error get order detail");
+        return StatusCode.UNKNOWN("server error")
+    }
+}
+
+async function deleteOrder(id) {
+    let connection;
+    try {
+        if(!id){
+            return StatusCode.INVALID_ARGUMENT("need id for order detail");
+        }
+        connection = await Mysql.getConnection();
+        let sql = `DELETE FROM orders WHERE id = ?`;
+        const [result] = await connection.query(sql, [id]);
+
+        if(result.affectedRows === 0) {
+            return StatusCode.NOT_FOUND("order not found");
+        }
+            return StatusCode.OK("order delete successfully");
+    } catch (error) {
+        console.log("Error delete order list");
         return StatusCode.UNKNOWN("server error")
     }
 }
 
 export default{
     orderList,
-    orderDetail
+    orderDetail,
+    deleteOrder
 }

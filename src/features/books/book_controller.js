@@ -5,9 +5,9 @@ const domain = config.DOMAIN;
 
 async function bookList(req, res) {
     try {
-        const { id, title } = req.query;
+        const { id, title, page, limit } = req.query;
         console.log("params :", title)
-        const books = await bookService.bookList(id , title);
+        const books = await bookService.bookList(id , title, page, limit);
 
         return res.json(books)
 

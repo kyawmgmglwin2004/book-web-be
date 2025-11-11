@@ -4,7 +4,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 
-async function bookList(id, title) {
+async function bookList(id, title, page = 1, limit = 2) {
   let connection;
   try {
     let sql = `SELECT * FROM books WHERE 1=1`;
@@ -20,13 +20,47 @@ async function bookList(id, title) {
       params.push(`%${title}%`);
     }
 
+    // Calculate pagination offset
+    const offset = (page - 1) * limit;
+    sql += ` LIMIT ? OFFSET ?`;
+    params.push(parseInt(limit), parseInt(offset));
+
     connection = await Mysql.getConnection();
-    console.log("sql :", sql);
+    console.log("sql :", sql, params);
+
+    // Get paginated books
     const [bookList] = await connection.query(sql, params);
+
+    // Get total count for pagination info
+    const [countResult] = await connection.query(
+      `SELECT COUNT(*) as total FROM books WHERE 1=1
+       ${id ? " AND id = ?" : ""}
+       ${title ? " AND title LIKE ?" : ""}`,
+      id && title
+        ? [id, `%${title}%`]
+        : id
+        ? [id]
+        : title
+        ? [`%${title}%`]
+        : []
+    );
+
+    const total = countResult[0].total;
+    const totalPages = Math.ceil(total / limit);
+
     if (bookList.length === 0) {
       return StatusCode.NOT_FOUND("Book not found!");
     }
-    return StatusCode.OK(bookList);
+
+    return StatusCode.OK({
+      data: bookList,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+      },
+    });
   } catch (error) {
     console.error("Error fetching book list:", error);
     return StatusCode.UNKNOWN("Database error");
@@ -34,6 +68,7 @@ async function bookList(id, title) {
     if (connection) connection.release();
   }
 }
+
 
 async function bookDetail(id) {
   let connection;
