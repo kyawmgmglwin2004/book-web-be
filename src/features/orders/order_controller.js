@@ -2,7 +2,8 @@ import orderService from "../orders/order_service.js";
 
 async function orderList(req, res) {
     try {
-        const orders = await orderService.orderList();
+        const{name, page, limit} = req.query;
+        const orders = await orderService.orderList(name, page, limit);
         return res.json(orders);
     } catch (error) {
         console.error("Error get book list action:", error);

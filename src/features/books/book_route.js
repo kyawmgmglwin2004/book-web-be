@@ -1,6 +1,7 @@
 import { Router } from "express"; // ⚠️ router npm package မဟုတ်ဘူး
 import bookController from "./book_controller.js";
 import multer from "multer";
+import auth from "../../middlewear/authJwt.js"
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/"),
@@ -12,8 +13,8 @@ const bookRouter = Router();
 
 bookRouter.get("/books", bookController.bookList);
 bookRouter.get("/books/:id", bookController.bookDetail);
-bookRouter.post("/books", upload.single("image"), bookController.addBooks);
-bookRouter.delete("/books/:id", bookController.deleteBook);
-bookRouter.post("/books/:id", upload.single("image"), bookController.updateBook);
+bookRouter.post("/books", auth.verifyAdminToken, upload.single("image"), bookController.addBooks);
+bookRouter.delete("/books/:id", auth.verifyAdminToken, bookController.deleteBook);
+bookRouter.post("/books/:id", auth.verifyAdminToken, upload.single("image"), bookController.updateBook);
 
 export default bookRouter;
