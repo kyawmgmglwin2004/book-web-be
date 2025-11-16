@@ -12,9 +12,8 @@ const upload = multer({ storage });
 const bookRouter = Router();
 
 bookRouter.get("/books", bookController.bookList);
-bookRouter.get("/books/:id", bookController.bookDetail);
-bookRouter.post("/books", auth.verifyAdminToken, upload.single("image"), bookController.addBooks);
+bookRouter.post("/books", auth.verifyAdminToken, upload.array("images",5), bookController.addBooks);
 bookRouter.delete("/books/:id", auth.verifyAdminToken, bookController.deleteBook);
-bookRouter.post("/books/:id", auth.verifyAdminToken, upload.single("image"), bookController.updateBook);
+bookRouter.post("/books/:id", auth.verifyAdminToken, upload.array("images",5), bookController.updateBook);
 
 export default bookRouter;

@@ -104,8 +104,36 @@ async function deleteOrder(id) {
   }
 }
 
+async function updateOrder(id, stauts) {
+  let connection;
+  try {
+    if(!id || !stauts){
+      return StatusCode.INVALID_ARGUMENT("Id and status are need");
+    }
+    connection = await Mysql.getConnection();
+    let sql = `SELECT * FROM orders WHERE id = ?`;
+    const [orders] = await connection.query(sql, [id]);
+
+    if(orders.length === 0){
+      return StatusCode.NOT_FOUND("order not found");
+    }
+    let sqlUpdate = `UPDATE orders SET status = ? WHERE id = ?`;
+    const [result] = await connection.query(sqlUpdate, [stauts, id]);
+    if(result.affectedRows === 0){
+      return StatusCode.UNKNOWN("can not update order status");
+    }
+    return StatusCode.OK("order status updated successfully");
+  } catch (error) {
+    console.log("Error delete order list");
+    return StatusCode.UNKNOWN("server error")
+  }finally {
+    if (connection) connection.release();
+  }
+}
+
 export default{
     orderList,
     orderDetail,
-    deleteOrder
+    deleteOrder,
+    updateOrder
 }

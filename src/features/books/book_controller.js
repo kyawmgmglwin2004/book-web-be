@@ -5,9 +5,9 @@ const domain = config.DOMAIN;
 
 async function bookList(req, res) {
     try {
-        const { id, title, page, limit } = req.query;
+        const { id, title, age, type, page, limit } = req.query;
         console.log("params :", title)
-        const books = await bookService.bookList(id , title, page, limit);
+        const books = await bookService.bookList(id , title, age, type, page, limit);
 
         return res.json(books)
 
@@ -20,34 +20,21 @@ async function bookList(req, res) {
     }
 }
 
-async function bookDetail(req, res) {
-    try {
-        const id = req.query.id;
-        const detail = await bookService.bookDetail(id);
-        return res.json(detail);
-    } catch (error) {
-        console.error("Error get book list action:", error);
-
-        return res
-            .status(500)
-            .json("SERVER ERROR");
-    }
-}
-
 async function addBooks(req, res) {
     try {
-        const { title, price, stock, remark } = req.body;
-        const imagePath = req.file ? `${domain}/uploads/${req.file.filename}` : null;
-        const result = await bookService.addBooks(title, imagePath, price, stock, remark);
+        const { title, price, stock, remark, type, age } = req.body;
+
+        // multiple images
+        const imagePaths = req.files?.map(file => `${domain}/uploads/${file.filename}`) || [];
+
+        const result = await bookService.addBooks(title, price, stock, remark, type, age, imagePaths);
         return res.json(result);
     } catch (error) {
         console.error("Error add new book action:", error);
-
-        return res
-            .status(500)
-            .json("SERVER ERROR");
+        return res.status(500).json("SERVER ERROR");
     }
 }
+
 
 async function deleteBook(req, res) {
     try {
@@ -66,20 +53,22 @@ async function deleteBook(req, res) {
 async function updateBook(req, res) {
   try {
     const { id } = req.params;
-    const { title, price, stock, remark } = req.body;
+    const { title, price, stock, type, age, remark } = req.body;
 
     // ✅ imagePath ကို undefined ထားမယ် (အသစ်တင်မှသာ assign)
-    let imagePath;
-    if (req.file) {
-      imagePath = `${domain}/uploads/${req.file.filename}`;
+    let imagePaths;
+    if (req.files) {
+      imagePaths = req.files.map(file => `${domain}/uploads/${file.filename}`) || [];
     }
 
     const result = await bookService.updateBook(
       id,
       title,
-      imagePath,
+      imagePaths,
       price,
       stock,
+      type,
+      age,
       remark
     );
 
@@ -92,7 +81,6 @@ async function updateBook(req, res) {
 
  export default {
     bookList,
-    bookDetail,
     addBooks,
     deleteBook,
     updateBook

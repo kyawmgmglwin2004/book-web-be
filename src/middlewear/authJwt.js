@@ -13,12 +13,12 @@ function signAdminToken(admin, options = {}) {
   };
 
   const signOptions = {
-    expiresIn: options.expiresIn || "8h",
+    expiresIn: options.expiresIn || "10m",
   };
 
   return jwt.sign(payload, SECRET, signOptions);
 }
-0
+
 function verifyAdminToken(req, res, next) {
   try {
     const authHeader = req.headers["authorization"] || req.headers["Authorization"];

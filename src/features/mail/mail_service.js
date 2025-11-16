@@ -1,9 +1,15 @@
 import nodemailer from "nodemailer";
 import Mysql from "../../helper/db.js";
 import { config } from "../../configs/config.js";
+import StatusCode from "../../helper/statusCode.js";
 
+// ✅ Send Email Function
 async function sendOrderMail(orderData) {
   try {
+    if (!orderData) {
+      return StatusCode.INVALID_ARGUMENT("Invalid argument");
+    }
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       host: "smtp.gmail.com",
@@ -41,22 +47,33 @@ async function sendOrderMail(orderData) {
 
     const info = await transporter.sendMail(mailOptions);
     console.log("✅ Email sent:", info.response);
-    return true;
+
+    if (!info) {
+      return StatusCode.UNKNOWN("Email sending error");
+    }
+
+    return StatusCode.OK("Email sent successfully");
   } catch (error) {
-    console.error("❌ Error sending email:", error);
-    return false;
+    console.error("Email error:", error);
+    return StatusCode.UNKNOWN("Email sending error");
   }
 }
 
-async function orderInsert(orderData) {
+// ✅ Main Process — Insert first, mail next
+async function processOrder(orderData) {
   let connection;
   try {
-    connection = await Mysql.getConnection();
-    await connection.beginTransaction();
-
     const { name, email, phone, address } = orderData.customer;
     const total = orderData.total;
 
+    if (!name || !email || !phone || !address || !total) {
+      return StatusCode.INVALID_ARGUMENT("Invalid argument for order");
+    }
+
+    connection = await Mysql.getConnection();
+    await connection.beginTransaction();
+
+    // 1️⃣ Insert order
     const [orderResult] = await connection.query(
       `INSERT INTO orders (name, email, phone, address, total)
        VALUES (?, ?, ?, ?, ?)`,
@@ -65,52 +82,63 @@ async function orderInsert(orderData) {
 
     const orderId = orderResult.insertId;
 
+    // 2️⃣ Insert order items and update stock
     for (const item of orderData.items) {
       await connection.query(
         `INSERT INTO order_items (order_id, name, quantity, price)
          VALUES (?, ?, ?, ?)`,
         [orderId, item.title, item.qty, item.price]
       );
+
+      const [rows] = await connection.query(
+        `SELECT stock FROM books WHERE id = ?`,
+        [item.id]
+      );
+
+      if (!rows.length) {
+        await connection.rollback();
+        return StatusCode.NOT_FOUND("Book not found");
+      }
+
+      if (rows[0].stock < item.qty) {
+        await connection.rollback();
+        return StatusCode.RESOURCE_EXHAUSTED("Not enough stock to order");
+      }
+
+      const [updateResult] = await connection.query(
+        `UPDATE books SET stock = stock - ? WHERE id = ?`,
+        [item.qty, item.id]
+      );
+
+      if (updateResult.affectedRows === 0) {
+        await connection.rollback();
+        return StatusCode.UNKNOWN("Stock update failed");
+      }
     }
 
+    // 3️⃣ Send email AFTER successful DB operations
+    const mailStatus = await sendOrderMail(orderData);
+
+    if (mailStatus.code !== 200) {
+      // ❌ Email failed → rollback
+      await connection.rollback();
+      console.error("❌ Email sending failed. Transaction rolled back.");
+      return StatusCode.UNKNOWN("Mail sending failed, order not saved");
+    }
+
+    // ✅ Email success → commit transaction
     await connection.commit();
-    return orderId;
+    console.log("✅ Order committed successfully with mail");
+    return StatusCode.OK({ orderId, message: "Order saved & mail sent" });
   } catch (error) {
     if (connection) await connection.rollback();
-    console.error("❌ Error inserting order:", error.message);
-    throw error;
+    console.error("❌ DB Error:", error);
+    return StatusCode.UNKNOWN("Error processing order");
   } finally {
     if (connection) connection.release();
   }
 }
 
-export async function processOrder(orderData) {
-  try {
-    // STEP 1: Try sending email first
-    const mailSent = await sendOrderMail(orderData);
-
-    if (!mailSent) {
-      console.warn("⚠️ Email failed. Order not saved.");
-      return { success: false, message: "Failed to send email. Order not saved." };
-    }
-
-    // STEP 2: Only if mail sent, save order in DB
-    const orderId = await orderInsert(orderData);
-    console.log("✅ Order saved with ID:", orderId);
-
-    return {
-      success: true,
-      message: "Email sent and order saved successfully.",
-      orderId,
-    };
-  } catch (error) {
-    console.error("❌ Error processing order:", error);
-    return { success: false, message: "Error processing order" };
-  }
-}
-
 export default {
-  sendOrderMail,
-  orderInsert,
   processOrder,
 };
