@@ -257,105 +257,200 @@ async function deleteBook(id) {
   }
 }
 
-async function updateBook(id, title, imagePaths, price, stock, type, age, remark) {
-  let connection;
+// async function updateBook(id, title, imagePaths, price, stock, type, age, remark) {
+//   let connection;
 
+//   try {
+//     connection = await Mysql.getConnection();
+//     await connection.beginTransaction();
+
+//     // 1️⃣ Check if book exists
+//     const [bookRows] = await connection.query(
+//       "SELECT id FROM books WHERE id = ?",
+//       [id]
+//     );
+
+//     if (bookRows.length === 0) {
+//       return StatusCode.NOT_FOUND("Book not found!");
+//     }
+
+//     // 2️⃣ Get old image list
+//     const [oldImages] = await connection.query(
+//       "SELECT image_url FROM book_images WHERE book_id = ?",
+//       [id]
+//     );
+
+//     // Prepare fields for update
+//     const fields = [];
+//     const values = [];
+
+//     if (title !== undefined) {
+//       fields.push("title = ?");
+//       values.push(title);
+//     }
+//     if (price !== undefined) {
+//       fields.push("price = ?");
+//       values.push(price);
+//     }
+//     if (stock !== undefined) {
+//       fields.push("stock = ?");
+//       values.push(stock);
+//     }
+//     if (type !== undefined) {
+//       fields.push("type = ?");
+//       values.push(type);
+//     }
+//     if (age !== undefined) {
+//       fields.push("age = ?");
+//       values.push(age);
+//     }
+//     if (remark !== undefined) {
+//       fields.push("remark = ?");
+//       values.push(remark);
+//     }
+
+//     // 3️⃣ Update book fields
+//     if (fields.length > 0) {
+//       const sql = `UPDATE books SET ${fields.join(", ")} WHERE id = ?`;
+//       values.push(id);
+//       await connection.query(sql, values);
+//     }
+
+//     // 4️⃣ Update images if new ones are provided
+//     if (imagePaths && imagePaths.length > 0) {
+//       // -- DELETE old DB records
+//       await connection.query("DELETE FROM book_images WHERE book_id = ?", [id]);
+
+//       // -- DELETE old image files
+//       for (const img of oldImages) {
+//         const imgUrl = img.image_url;
+//         const idx = imgUrl.indexOf("/uploads/");
+//         if (idx !== -1) {
+//           const relative = imgUrl.substring(idx + 1);
+//           const fullPath = path.join(process.cwd(), relative);
+
+//           if (fs.existsSync(fullPath)) {
+//             fs.unlinkSync(fullPath);
+//             console.log("Deleted old:", fullPath);
+//           }
+//         }
+//       }
+
+//       // -- INSERT new images
+//       for (const newImg of imagePaths) {
+//         await connection.query(
+//           "INSERT INTO book_images (book_id, image_url) VALUES (?, ?)",
+//           [id, newImg]
+//         );
+//       }
+//     }
+
+//     await connection.commit();
+//     return StatusCode.OK("Book updated successfully!");
+//   } catch (error) {
+//     if (connection) await connection.rollback();
+//     console.error("Error updating book:", error);
+//     return StatusCode.UNKNOWN("Internal server error");
+//   } finally {
+//     if (connection) connection.release();
+//   }
+// }
+async function updateBook(
+  id,
+  title,
+  finalImagePaths = [], // array of URLs (strings) that should remain after update
+  price,
+  stock,
+  type,
+  age,
+  remark
+) {
+  let connection;
   try {
     connection = await Mysql.getConnection();
     await connection.beginTransaction();
 
-    // 1️⃣ Check if book exists
-    const [bookRows] = await connection.query(
-      "SELECT id FROM books WHERE id = ?",
-      [id]
-    );
-
+    // 1. Check existence
+    const [bookRows] = await connection.query("SELECT id FROM books WHERE id = ?", [id]);
     if (bookRows.length === 0) {
+      await connection.rollback();
       return StatusCode.NOT_FOUND("Book not found!");
     }
 
-    // 2️⃣ Get old image list
-    const [oldImages] = await connection.query(
-      "SELECT image_url FROM book_images WHERE book_id = ?",
+    // 2. Read current images (database)
+    const [oldImageRows] = await connection.query(
+      "SELECT id, image_url FROM book_images WHERE book_id = ?",
       [id]
     );
+    const oldImageUrls = oldImageRows.map((r) => r.image_url);
 
-    // Prepare fields for update
+    // 3. Prepare update for book fields
     const fields = [];
     const values = [];
+    if (title !== undefined) { fields.push("title = ?"); values.push(title); }
+    if (price !== undefined) { fields.push("price = ?"); values.push(price); }
+    if (stock !== undefined) { fields.push("stock = ?"); values.push(stock); }
+    if (type !== undefined) { fields.push("type = ?"); values.push(type); }
+    if (age !== undefined) { fields.push("age = ?"); values.push(age); }
+    if (remark !== undefined) { fields.push("remark = ?"); values.push(remark); }
 
-    if (title !== undefined) {
-      fields.push("title = ?");
-      values.push(title);
-    }
-    if (price !== undefined) {
-      fields.push("price = ?");
-      values.push(price);
-    }
-    if (stock !== undefined) {
-      fields.push("stock = ?");
-      values.push(stock);
-    }
-    if (type !== undefined) {
-      fields.push("type = ?");
-      values.push(type);
-    }
-    if (age !== undefined) {
-      fields.push("age = ?");
-      values.push(age);
-    }
-    if (remark !== undefined) {
-      fields.push("remark = ?");
-      values.push(remark);
-    }
-
-    // 3️⃣ Update book fields
     if (fields.length > 0) {
       const sql = `UPDATE books SET ${fields.join(", ")} WHERE id = ?`;
       values.push(id);
       await connection.query(sql, values);
     }
 
-    // 4️⃣ Update images if new ones are provided
-    if (imagePaths && imagePaths.length > 0) {
-      // -- DELETE old DB records
-      await connection.query("DELETE FROM book_images WHERE book_id = ?", [id]);
+    // 4. Compute images to delete and to insert
+    // Normalize inputs to strings
+    finalImagePaths = finalImagePaths.map((p) => String(p));
 
-      // -- DELETE old image files
-      for (const img of oldImages) {
-        const imgUrl = img.image_url;
-        const idx = imgUrl.indexOf("/uploads/");
+    const toDelete = oldImageUrls.filter((url) => !finalImagePaths.includes(url));
+    const toKeep = oldImageUrls.filter((url) => finalImagePaths.includes(url));
+    const toInsert = finalImagePaths.filter((url) => !oldImageUrls.includes(url));
+
+    // 5. Delete removed DB rows and files
+    if (toDelete.length > 0) {
+      // delete DB records for those URLs
+      for (const url of toDelete) {
+        await connection.query("DELETE FROM book_images WHERE book_id = ? AND image_url = ?", [id, url]);
+        // delete file from disk if stored under /uploads/
+        const idx = url.indexOf("/uploads/");
         if (idx !== -1) {
-          const relative = imgUrl.substring(idx + 1);
+          const relative = url.substring(idx + 1); // remove leading slash
           const fullPath = path.join(process.cwd(), relative);
-
-          if (fs.existsSync(fullPath)) {
-            fs.unlinkSync(fullPath);
-            console.log("Deleted old:", fullPath);
+          try {
+            if (fs.existsSync(fullPath)) {
+              fs.unlinkSync(fullPath);
+              console.log("Deleted file:", fullPath);
+            }
+          } catch (err) {
+            console.warn("Failed to delete file:", fullPath, err);
+            // Not fatal — continue
           }
         }
       }
+    }
 
-      // -- INSERT new images
-      for (const newImg of imagePaths) {
+    // 6. Insert new images (only those not already present)
+    if (toInsert.length > 0) {
+      for (const imgUrl of toInsert) {
         await connection.query(
           "INSERT INTO book_images (book_id, image_url) VALUES (?, ?)",
-          [id, newImg]
+          [id, imgUrl]
         );
       }
     }
 
     await connection.commit();
-    return StatusCode.OK("Book updated successfully!");
+    return StatusCode.OK("Book updated successfully!", { deleted: toDelete.length, inserted: toInsert.length });
   } catch (error) {
     if (connection) await connection.rollback();
     console.error("Error updating book:", error);
     return StatusCode.UNKNOWN("Internal server error");
   } finally {
-    if (connection) connection.release();
+    if (connection) connection.release && connection.release();
   }
 }
-
 
 
 

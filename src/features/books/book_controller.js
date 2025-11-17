@@ -50,21 +50,59 @@ async function deleteBook(req, res) {
     }
 }
 
+// async function updateBook(req, res) {
+//   try {
+//     const { id } = req.params;
+//     const { title, price, stock, type, age, remark } = req.body;
+
+//     // ✅ imagePath ကို undefined ထားမယ် (အသစ်တင်မှသာ assign)
+//     let imagePaths;
+//     if (req.files) {
+//       imagePaths = req.files.map(file => `${domain}/uploads/${file.filename}`) || [];
+//     }
+
+//     const result = await bookService.updateBook(
+//       id,
+//       title,
+//       imagePaths,
+//       price,
+//       stock,
+//       type,
+//       age,
+//       remark
+//     );
+
+//     return res.json(result);
+//   } catch (error) {
+//     console.error("Error update book action:", error);
+//     return res.status(500).json("SERVER ERROR");
+//   }
+// }
 async function updateBook(req, res) {
   try {
     const { id } = req.params;
     const { title, price, stock, type, age, remark } = req.body;
 
-    // ✅ imagePath ကို undefined ထားမယ် (အသစ်တင်မှသာ assign)
-    let imagePaths;
-    if (req.files) {
-      imagePaths = req.files.map(file => `${domain}/uploads/${file.filename}`) || [];
+    // ====== 1) OLD IMAGES ======
+    let oldImages = req.body.oldImage || [];
+console.log("REQ BODY:", req.body.oldImage);
+    console.log("REQ FILES:", req.files);
+   
+    if (typeof oldImages === "string") {
+      oldImages = [oldImages];
     }
+
+    let newImages = [];
+    if (req.files && req.files.length > 0) {
+      newImages = req.files.map((file) => `${domain}/uploads/${file.filename}`);
+    }
+
+    const finalImagePaths = [...oldImages, ...newImages];
 
     const result = await bookService.updateBook(
       id,
       title,
-      imagePaths,
+      finalImagePaths,
       price,
       stock,
       type,
@@ -73,11 +111,13 @@ async function updateBook(req, res) {
     );
 
     return res.json(result);
+
   } catch (error) {
     console.error("Error update book action:", error);
     return res.status(500).json("SERVER ERROR");
   }
 }
+
 
  export default {
     bookList,
