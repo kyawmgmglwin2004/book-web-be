@@ -34,13 +34,16 @@ app.get("/test", (req , res) => {
 
 console.log("App.JS port : ", config.PORT)
 
-const sslOptions = {
-  key: fs.readFileSync("/etc/letsencrypt/live/book.kyawmgmglwin.site/privkey.pem"),
-  cert: fs.readFileSync("/etc/letsencrypt/live/book.kyawmgmglwin.site/fullchain.pem"),
-};
+// const sslOptions = {
+//   key: fs.readFileSync("/etc/letsencrypt/live/book.kyawmgmglwin.site/privkey.pem"),
+//   cert: fs.readFileSync("/etc/letsencrypt/live/book.kyawmgmglwin.site/fullchain.pem"),
+// };
 
 // Start HTTPS server
 const PORT = config.PORT || 5000;
-https.createServer(sslOptions, app).listen(PORT, () => {
-  console.log(`HTTPS Server running on https://localhost:${PORT}`);
+// https.createServer(sslOptions, app).listen(PORT, () => {
+//   console.log(`HTTPS Server running on https://localhost:${PORT}`);
+// });
+app.listen(PORT, () => {
+  console.log(`HTTP Server running on http://localhost:${PORT}`);
 });

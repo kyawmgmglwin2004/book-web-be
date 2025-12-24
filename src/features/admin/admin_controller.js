@@ -5,10 +5,10 @@ async function adminLogin(req, res ) {
     try {
         const { email, password } = req.body;
         const serviceRes = await adminService.adminLogin(email, password);
-
+        console.log("Service Response:", serviceRes);
         // serviceRes is a StatusCode object
-        if (serviceRes && serviceRes.code === 200) {
-            const user = serviceRes.data;
+        if ( serviceRes.code === 200) {
+            const user = serviceRes.message;
             // decide role and generate appropriate token
             let token;
             if (user.role && user.role.toLowerCase() === "admin") {
