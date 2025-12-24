@@ -24,6 +24,25 @@ async function adminLogin(userName, email, password) {
     if (connection) connection.release();
   }
 }
+
+async function userRegister(userName , email , password) {
+  let connection;
+  try {
+    let sql = `INSERT INTO users (userName, email, password) VALUES (?, ?, ?)`;
+    connection = await Mysql.getConnection();
+    const [result] = await connection.query(sql, [userName, email, password]);
+    if (result.affectedRows === 0) {
+      return StatusCode.UNKNOWN("User registration failed");
+    }
+    return StatusCode.OK("user registered successfully");
+  } catch (error) {
+    console.error("Error registering user:", error);
+    return StatusCode.UNKNOWN("Database error");
+  } finally {
+    if (connection) connection.release();
+  }
+}
 export default {
-    adminLogin
+    adminLogin,
+    userRegister
 }

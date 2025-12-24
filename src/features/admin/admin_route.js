@@ -6,6 +6,9 @@ const adminRouter = Router();
 
 // public
 adminRouter.post("/login", adminController.adminLogin);
+adminRouter.post("/register", adminController.userRegister);
+
+// protected
 
 // demo protected route - returns decoded admin info from token
 adminRouter.get("/me", authJwt.verifyAdminToken, (req, res) => {
