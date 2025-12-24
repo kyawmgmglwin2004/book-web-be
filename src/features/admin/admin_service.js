@@ -31,9 +31,10 @@ async function adminLogin(email, password) {
 async function userRegister(userName , email , password) {
   let connection;
   try {
-    let sql = `INSERT INTO users (userName, email, password) VALUES (?, ?, ?)`;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    let sql = `INSERT INTO users (userName, email, password, created_at) VALUES (?, ?, ?, NOW())`;
     connection = await Mysql.getConnection();
-    const [result] = await connection.query(sql, [userName, email, password]);
+    const [result] = await connection.query(sql, [userName, email, hashedPassword]);
     if (result.affectedRows === 0) {
       return StatusCode.UNKNOWN("User registration failed");
     }

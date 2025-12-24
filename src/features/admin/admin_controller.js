@@ -57,5 +57,5 @@ async function userRegister(req, res ) {
 
 export default {
     adminLogin,
-    userRegister
+        userRegister
 }
