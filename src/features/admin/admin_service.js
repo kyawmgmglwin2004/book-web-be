@@ -31,6 +31,9 @@ async function adminLogin(email, password) {
 async function userRegister(userName , email , password) {
   let connection;
   try {
+    if (!userName || !email || !password) {
+      return StatusCode.INVALID_ARGUMENT("Missing required fields");
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
     let sql = `INSERT INTO users (userName, email, password, created_at) VALUES (?, ?, ?, NOW())`;
     connection = await Mysql.getConnection();

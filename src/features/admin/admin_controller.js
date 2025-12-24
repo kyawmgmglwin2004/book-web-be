@@ -36,6 +36,9 @@ async function adminLogin(req, res ) {
 async function userRegister(req, res ) {
     try {
         const { userName , email, password } = req.body;
+        if(!userName || !email || !password){
+            return res.json({code: 400, status: "BAD REQUEST", message: "Missing required fields"});
+        }
         const serviceRes = await adminService.userRegister(userName, email, password);
 
         // serviceRes is a StatusCode object
