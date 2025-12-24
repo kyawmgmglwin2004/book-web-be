@@ -15,4 +15,9 @@ adminRouter.get("/me", authJwt.verifyAdminToken, (req, res) => {
 	return res.json({ code: 200, status: "OK", message: "admin info", data: req.admin });
 });
 
+// customer/profile - returns profile for any authenticated user (customer or admin)
+adminRouter.get("/profile", authJwt.verifyAnyToken, (req, res) => {
+  return res.json({ code: 200, status: "OK", message: "profile", data: req.user });
+});
+
 export default adminRouter;

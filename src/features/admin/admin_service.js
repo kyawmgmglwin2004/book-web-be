@@ -2,23 +2,26 @@ import Mysql from "../../helper/db.js";
 import StatusCode from "../../helper/statusCode.js";
 import bcrypt from "bcrypt";
 
-async function adminLogin(userName, email, password) {
+async function adminLogin(email, password) {
   let connection;
   try {
-    let sql = `SELECT * FROM users WHERE userName = ? AND email = ?`;
+    const sql = `SELECT * FROM users WHERE email = ?`;
     connection = await Mysql.getConnection();
-    const [admin] = await connection.query(sql, [userName, email]);
+    const [rows] = await connection.query(sql, [email]);
 
-    if (admin.length === 0) {
-      return StatusCode.NOT_FOUND("admin not found!");
+    if (rows.length === 0) {
+      return StatusCode.NOT_FOUND("user not found");
     }
-    const isMatch = await bcrypt.compare(password, admin[0].password);
+
+    const user = rows[0];
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return StatusCode.INVALID_ARGUMENT("Password is not correct!");
     }
-        return StatusCode.OK("admin login success", admin[0])
+
+    return StatusCode.OK("login success", user);
   } catch (error) {
-    console.error("Error fetching admin list:", error);
+    console.error("Error fetching user:", error);
     return StatusCode.UNKNOWN("Database error");
   } finally {
     if (connection) connection.release();

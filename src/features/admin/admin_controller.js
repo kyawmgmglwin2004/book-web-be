@@ -3,8 +3,8 @@ import authJwt from "../../middlewear/authJwt.js";
 
 async function adminLogin(req, res ) {
     try {
-        const { userName , email, password } = req.body;
-        const serviceRes = await adminService.adminLogin(userName, email, password);
+        const { email, password } = req.body;
+        const serviceRes = await adminService.adminLogin(email, password);
 
         // serviceRes is a StatusCode object
         if (serviceRes && serviceRes.code === 200) {
