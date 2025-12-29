@@ -13,7 +13,7 @@ function signAdminToken(admin, options = {}) {
   };
 
   const signOptions = {
-    expiresIn: options.expiresIn || "10m",
+    expiresIn: options.expiresIn || "60m",
   };
 
   return jwt.sign(payload, SECRET, signOptions);
