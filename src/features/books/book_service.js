@@ -5,7 +5,7 @@ import path from "path";
 import fs from "fs";
 
 
-  async function bookList(id, title, age, type,  page = 1, limit = 8) {
+  async function bookList(id, title, age, type,  page = 1, limit = 100) {
     let connection;
 
     try {
